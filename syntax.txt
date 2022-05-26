@@ -1,0 +1,44 @@
+// This is not exact BNF because:
+// 1. I don't really know BNF
+// 2. Some things are REALLY hard to show in BNF
+// So please read surrounding comments.
+
+// The whole program is a paragraph.
+PARAGRAPH              := [ ARGUMENT_SPEC ] SENTENCE ...
+SENTENCE               := [ CONDITION la ] ( ASSIGNMENT | o )
+                          ( SENTENCE_BODY | PALI_SIN_SENTENCE_BODY )
+SENTENCE_BODY          := ( VERB_CLAUSE | EXPRESSION ) .
+PALI_SIN_SENTENCE_BODY := ( PALI_SIN_VERB_CLAUSE | pali sin ) .
+                          PARAGRAPH pali sin li pini.
+
+
+// Assignments and conditions
+CONDITION  := EXPRESSION | EXPRESSION li lili | EXPRESSION li suli | EXPRESSION li EXPRESSION
+ASSIGNMENT := VARIABLE | ASSIGNMENT pi EXPRESSION
+
+
+// Verb clauses
+VERB_CLAUSE := VERB [ e EXPRESSION  [ ARGUMENTS ] ]
+VERB        := pali | pana | lukin | sitelen | kipisi | open | pini
+ARGUMENTS   := ( kepeken EXPRESSION ) ...
+PALI_SIN_VERB_CLAUSE := pali e pali sin [ ARGUMENTS ]
+
+
+// Expressions
+EXPRESSION        := PI_EXPRESSION | EXPRESSION en PI_EXPRESSION
+PI_EXPRESSION     := SIMPLE_EXPRESSION | PI_EXPRESSION pi SIMPLE_EXPRESSION
+SIMPLE_EXPRESSION := VALUE | VARIABLE | nanpa nasa | SIMPLE_EXPRESSION ala
+
+
+// Variables
+VARIABLE   := ijo IDENTIFIER
+// Identifiers also have to be capitalised.
+IDENTIFIER := (C)V(N) [ CV(N) ... ]
+
+
+// Literals
+VALUE     := NUMBER | STRING | ala | lon | kulupu | pali ni
+// At least one number-word must be present after 'nanpa'.
+NUMBER      := nanpa ala | nanpa [ ( ale | ali ) ... ] [ mute ... ] [ luka ... ] [ tu ... ] [ wan ... ]
+STRING      := nimi "[ STRING_CHAR ... ]"
+STRING_CHAR := MATCHING [^\\] | \n | \" | \\
