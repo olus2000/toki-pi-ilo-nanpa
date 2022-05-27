@@ -31,7 +31,7 @@ SIMPLE_EXPRESSION := VALUE | VARIABLE | nanpa nasa | SIMPLE_EXPRESSION ala
 
 
 // Variables
-VARIABLE   := ijo IDENTIFIER
+VARIABLE   := ijo [ lili | suli ] IDENTIFIER
 // Identifiers also have to be capitalised.
 IDENTIFIER := (C)V(N) [ CV(N) ... ]
 

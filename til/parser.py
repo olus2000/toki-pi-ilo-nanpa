@@ -33,11 +33,16 @@ class LiteralExpr(Expression):
 
 class VariableExpr(Expression):
 
-    def __init__(self, identifier):
+    def __init__(self, var_type, identifier):
+        self.var_type = var_type
         self.identifier = identifier
 
     def __str__(self):
-        return f'ijo {self.identifier}'
+        match self.var_type:
+            case None:
+                return f'ijo {self.identifier}'
+            case var_type:
+                return f'ijo {var_type} {self.identifier}'
 
 
 class RandomExpr(Expression):
@@ -112,6 +117,25 @@ class TableAssignment:
         return f'{self.table} pi {self.index}'
 
 
+class Sentence:
+
+    def __init__(self, conditions, assignment, expr):
+        self.conditions = conditions
+        self.assignment = assignment
+        self.expr = expr
+
+    def __str__(self):
+        conds = ''
+        for cond in self.conditions:
+            conds += f'{cond} la '
+        match self.assignment:
+            case None:
+                return f'{conds}o {self.expr}.'
+            case a:
+                return f'{conds}{a} li {self.expr}.'
+        
+
+
 ####   Parsing helpers   ####
 
 class ParsingError:
@@ -149,6 +173,8 @@ def alter(*parsers):
                     oi, ol, oc, oe = max((ni, nl, nc, ne), (oi, ol, oc, oe))
                 case i, l, c, parsed:
                     return i, l, c, parsed
+                case a:
+                    raise ValueError(a)
         return oi, ol, oc, oe
     return f
 
@@ -159,9 +185,23 @@ def parse_many(parser):
         while True:
             match parser(p, i, l, c):
                 case _, _, _, ParsingError():
-                    return ans
-                case (i, l, c, value):
+                    return i, l, c, ans
+                case i, l, c, value:
                     ans.append(value)
+                case a:
+                    raise ValueError(a)
+    return f
+
+
+def option(parser):
+    def f(p, i, l, c):
+        match parser(p, i, l, c):
+            case _, _, _, ParsingError():
+                return i, l, c, None
+            case i, l, c, val:
+                return i, l, c, val
+            case a:
+                raise ValueError(a)
     return f
 
 
@@ -248,6 +288,7 @@ def parse_separated(parser):
             case a:
                 raise ValueError(a)
     return f
+
 
 ####   Parsing (and some lexing also)   ####
 
@@ -350,12 +391,14 @@ def parse_identifier(p, i, l, c):
 
 def parse_variable(p, i, l, c):
     parser = chain(parse_word('ijo'),
+                   option(alter(parse_separated(parse_word('lili')),
+                                parse_separated(parse_word('suli')))),
                    parse_separated(parse_identifier))
     match parser(p, i, l, c):
         case i, l, c, ParsingError() as e:
             return i, l, c, e
-        case i, l, c, ['ijo', str() as identifier]:
-            return i, l, c, VariableExpr(identifier)
+        case i, l, c, ['ijo', var_type, str() as identifier]:
+            return i, l, c, VariableExpr(var_type, identifier)
         case a:
             raise ValueError(a)
 
@@ -567,7 +610,7 @@ def parse_sentence(p, i, l, c):
             return i, l, c, e
         case i, l, c, 'o':
             assignment = None
-        case i, l, c, VariableExpr() | TableAssignment() as assignment:
+        case i, l, c, [VariableExpr() | TableAssignment() as assignment, 'li']:
             pass
         case a:
             raise ValueError(a)
@@ -582,4 +625,6 @@ def parse_sentence(p, i, l, c):
         case i, l, c, ParsingError() as e:
             return i, l, c, e
         case i, l, c, [_, '.']:
-            return Sentence(conditions, assignment, expr)
+            return i, l, c, Sentence(conditions, assignment, expr)
+        case a:
+            raise ValueError(a)
