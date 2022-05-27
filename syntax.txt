@@ -5,7 +5,7 @@
 
 // The whole program is a paragraph.
 PARAGRAPH              := [ ARGUMENT_SPEC ] SENTENCE ...
-SENTENCE               := [ CONDITION la ] ( ASSIGNMENT | o )
+SENTENCE               := [ CONDITION la ... ] ( ASSIGNMENT | o )
                           ( SENTENCE_BODY | PALI_SIN_SENTENCE_BODY )
 SENTENCE_BODY          := ( VERB_CLAUSE | EXPRESSION ) .
 PALI_SIN_SENTENCE_BODY := ( PALI_SIN_VERB_CLAUSE | pali sin ) .

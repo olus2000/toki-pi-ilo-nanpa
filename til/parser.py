@@ -28,7 +28,7 @@ class LiteralExpr(Expression):
         self.value = value
 
     def __str__(self):
-        return str(self.value)
+        return repr(self.value)
 
 
 class VariableExpr(Expression):
@@ -74,6 +74,16 @@ class BinExpr(Expression):
 
     def __str__(self):
         return f'{self.left} {self.op} {self.right}'
+
+
+class ComparisonExpr(Expression):
+
+    def __init__(self, op, expr):
+        self.op = op
+        self.expr = expr
+
+    def __str__(self):
+        return f'{self.expr} li {self.op}'
 
 
 class VerbExpr(Expression):
@@ -515,3 +525,61 @@ def parse_assignment(p, i, l, c):
             case a:
                 raise ValueError(a)
             
+
+def parse_condition(p, i, l, c):
+    match parse_expression(p, i, l, c):
+        case i, l, c, ParsingError() as e:
+            return i, l, c, e
+        case i, l, c, Expression() as expr:
+            pass
+        case a:
+            raise ValueError(a)
+    match chain(parse_separated(parse_word('li')),
+                parse_separated(alter(parse_word('lili'),
+                                      parse_word('suli'),
+                                      parse_expression)))(p, i, l, c):
+        case _, _, _, ParsingError() as e:
+            return i, l, c, expr
+        case i, l, c, ['li', 'lili']:
+            return i, l, c, ComparisonExpr('lili', expr)
+        case i, l, c, ['li', 'suli']:
+            return i, l, c, ComparisonExpr('suli', expr)
+        case i, l, c, ['li', Expression() as right]:
+            return i, l, c, BinExpr('li', expr, right)
+        case a:
+            raise ValueError(a)
+
+
+def parse_sentence(p, i, l, c):
+    conditions = []
+    while True:
+        match chain(parse_condition, parse_separated(parse_word('la')))(p, i, l, c):
+            case _, _, _, ParsingError():
+                break
+            case i, l, c, [Expression() as cond, 'la']:
+                conditions.append(cond)
+            case a:
+                raise ValueError(a)
+        i, l, c, _ = parse_whitespace_separator(p, i, l, c)
+    match alter(parse_word('o'),
+                chain(parse_assignment, parse_separated(parse_word('li'))))(p, i, l, c):
+        case i, l, c, ParsingError() as e:
+            return i, l, c, e
+        case i, l, c, 'o':
+            assignment = None
+        case i, l, c, VariableExpr() | TableAssignment() as assignment:
+            pass
+        case a:
+            raise ValueError(a)
+    match parse_separated(parse_sentence_body)(p, i, l, c):
+        case i, l, c, ParsingError() as e:
+            return i, l, c, e
+        case i, l, c, Expression() as expr:
+            pass
+        case a:
+            raise ValueError(a)
+    match chain(parse_whitespace, parse_char('.'))(p, i, l, c):
+        case i, l, c, ParsingError() as e:
+            return i, l, c, e
+        case i, l, c, [_, '.']:
+            return Sentence(conditions, assignment, expr)
