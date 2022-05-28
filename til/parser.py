@@ -13,6 +13,13 @@ In this file:
     value - value of the parsed string
 Parsers are functions of type:
 (p, i, l, c) -> (i, l, c, e | value)
+
+ValueError is raised in the case of an
+unexhaustive match-case.
+
+The way some parsing is grouped into functions
+may look a bit janky. Some of it is to make
+error reporting better.
 '''
 
 
@@ -28,7 +35,11 @@ class LiteralExpr(Expression):
         self.value = value
 
     def __str__(self):
-        return repr(self.value)
+        match self.value:
+            case Paragraph() as p:
+                return str(p)            
+            case _:
+                return repr(self.value)
 
 
 class VariableExpr(Expression):
@@ -133,7 +144,24 @@ class Sentence:
                 return f'{conds}o {self.expr}.'
             case a:
                 return f'{conds}{a} li {self.expr}.'
-        
+
+
+class Paragraph:
+
+    def __init__(self, arguments, sentences):
+        self.arguments = arguments
+        self.sentences = sentences
+
+    def __str__(self):
+        if self.arguments:
+            args = ('\npali ni li kepeken e ' +
+                    ' e '.join(str(arg) for arg in self.arguments) +
+                    '.\n')
+        else:
+            args = '\n'
+        return (args +
+                '\n'.join(str(s) for s in self.sentences) +
+                '\npali sin li pini')
 
 
 ####   Parsing helpers   ####
@@ -289,6 +317,10 @@ def parse_separated(parser):
                 raise ValueError(a)
     return f
 
+
+def parse_words(*words):
+    parsers = [parse_word(words[0])] + [parse_separated(parse_word(w)) for w in words[1:]]
+    return chain(*parsers)
 
 ####   Parsing (and some lexing also)   ####
 
@@ -511,10 +543,21 @@ def parse_sentence_body(p, i, l, c):
             pass
         case a:
             raise ValueError(a)
+    match parse_arguments(p, i, l, c):
+        case i, l, c, ParsingError() as e:
+            return i, l, c, e
+        case i, l, c, args:
+            return i, l, c, VerbExpr(verb, first, args)
+        case a:
+            raise ValueError(a)
+
+
+def parse_arguments(p, i, l, c):
+    args = []
     while True:
         match parse_separated(parse_word('kepeken'))(p, i, l, c):
             case _, _, _, ParsingError() as e:
-                return i, l, c, VerbExpr(verb, first, args)
+                return i, l, c, args
             case i, l, c, 'kepeken':
                 pass
             case a:
@@ -593,6 +636,66 @@ def parse_condition(p, i, l, c):
             raise ValueError(a)
 
 
+def parse_paragraph(p, i, l, c):
+    match parse_words('pali', 'ni')(p, i, l, c):
+        case _, _, _, ParsingError():
+            arguments = []
+        case i, l, c, ['pali', 'ni']:
+            match parse_separated(chain(
+                                parse_words('li', 'kepeken', 'e', 'ijo'),
+                                parse_separated(parse_identifier)))(p, i, l, c):
+                case i, l, c, ParsingError() as e:
+                    return i, l, c, e
+                case i, l, c, [['li', 'kepeken', 'e', 'ijo'], str() as identifier]:
+                    arguments = [VariableExpr(None, identifier)]
+                case a:
+                    raise ValueError(a)
+            while True:
+                match alter(chain(parse_whitespace, parse_char('.')),
+                            chain(parse_separated(parse_words('e', 'ijo')),
+                                  parse_separated(parse_identifier)))(p, i, l, c):
+                    case i, l, c, ParsingError() as e:
+                        return i, l, c, e
+                    case i, l, c, [_, '.']:
+                        break
+                    case i, l, c, [['e', 'ijo'], str() as identifier]:
+                        arguments.append(VariableExpr(None, identifier))
+                    case a:
+                        raise ValueError(a)
+        case a:
+            raise ValueError(a)
+    if arguments:
+        match parse_whitespace_separator(p, i, l, c):
+            case i, l, c, ParsingError() as e:
+                return i, l, c, e
+            case i, l, c, _:
+                pass
+            case a:
+                raise ValueError(a)
+    sentences = []
+    while i < len(p):
+        match alter(parse_words('pali', 'sin', 'li', 'pini'),
+                    parse_sentence)(p, i, l, c):
+            case i, l, c, ParsingError() as e:
+                return i, l, c, e
+            case i, l, c, ['pali', 'sin', 'li', 'pini']:
+                break
+            case i, l, c, Sentence() as s:
+                sentences.append(s)
+            case a:
+                raise ValueError(a)
+        if i == len(p):
+            break
+        match parse_whitespace_separator(p, i, l, c):
+            case i, l, c, ParsingError() as e:
+                return i, l, c, e
+            case i, l, c, _:
+                pass
+            case a:
+                raise ValueError(a)
+    return i, l, c, Paragraph(arguments, sentences)
+
+
 def parse_sentence(p, i, l, c):
     conditions = []
     while True:
@@ -614,9 +717,36 @@ def parse_sentence(p, i, l, c):
             pass
         case a:
             raise ValueError(a)
-    match parse_separated(parse_sentence_body)(p, i, l, c):
+    match parse_separated(alter(parse_words('pali', 'sin'),
+                                parse_words('pali', 'e', 'pali', 'sin'),
+                                parse_sentence_body))(p, i, l, c):
         case i, l, c, ParsingError() as e:
             return i, l, c, e
+        case i, l, c, ['pali', 'sin']:
+            match chain(parse_whitespace, parse_char('.'),
+                        parse_separated(parse_paragraph))(p, i, l, c):
+                case i, l, c, ParsingError() as e:
+                    return i, l, c, e
+                case i, l, c, [_, '.', Paragraph() as par]:
+                    expr = LiteralExpr(par)
+                case a:
+                    raise ValueError(a)
+        case i, l ,c, ['pali', 'e', 'pali', 'sin']:
+            match parse_arguments(p, i, l, c):
+                case i, l, c, ParsingError() as e:
+                    return i, l, c, e
+                case i, l, c, args:
+                    pass
+                case a:
+                    raise ValueError(a)
+            match chain(parse_whitespace, parse_char('.'),
+                        parse_separated(parse_paragraph))(p, i, l, c):
+                case i, l, c, ParsingError() as e:
+                    return i, l, c, e
+                case i, l, c, [_, '.', Paragraph() as par]:
+                    expr = VerbExpr('pali', LiteralExpr(par), args)
+                case a:
+                    raise ValueError(a)
         case i, l, c, Expression() as expr:
             pass
         case a:

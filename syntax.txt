@@ -13,8 +13,10 @@ PALI_SIN_SENTENCE_BODY := ( PALI_SIN_VERB_CLAUSE | pali sin ) .
 
 
 // Assignments and conditions
-CONDITION  := EXPRESSION | EXPRESSION li lili | EXPRESSION li suli | EXPRESSION li EXPRESSION
-ASSIGNMENT := VARIABLE | ASSIGNMENT pi EXPRESSION
+CONDITION     := EXPRESSION | EXPRESSION li lili | EXPRESSION li suli
+               | EXPRESSION li EXPRESSION
+ASSIGNMENT    := VARIABLE | ASSIGNMENT pi EXPRESSION
+ARGUMENT_SPEC := pali ni li kepeken ( e ijo IDENTIFIER ) ...
 
 
 // Verb clauses
@@ -39,6 +41,7 @@ IDENTIFIER := (C)V(N) [ CV(N) ... ]
 // Literals
 VALUE     := NUMBER | STRING | ala | lon | kulupu | pali ni
 // At least one number-word must be present after 'nanpa'.
-NUMBER      := nanpa ala | nanpa [ ( ale | ali ) ... ] [ mute ... ] [ luka ... ] [ tu ... ] [ wan ... ]
+NUMBER      := nanpa ala | nanpa [ ( ale | ali ) ... ] [ mute ... ]
+               [ luka ... ] [ tu ... ] [ wan ... ]
 STRING      := nimi "[ STRING_CHAR ... ]"
 STRING_CHAR := MATCHING [^\\] | \n | \" | \\
