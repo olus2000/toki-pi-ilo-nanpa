@@ -28,11 +28,14 @@ error reporting better.
 
 class ParsingError:
 
-    def __init__(self, message):
+    def __init__(self, line, column, message):
         self.message = message
+        self.line = line
+        self.column = column
 
     def __str__(self):
-        return self.message
+        return f'Parsing error at line {self.line+1} column {self.column+1}:\n'\
+               f'{self.message}'
 
     # A trick to make max(None, ParsingError) return ParsingError in alter
     def __lt__(self, v):
@@ -104,9 +107,7 @@ def parse_char(char):
             else:
                 c += 1
             return i + 1, l, c, char
-        return i, l, c, ParsingError(
-            f'Parsing Error at line {l} column {c}:\n'
-            f'Expected "{char}"')
+        return i, l, c, ParsingError(l, c, f'Expected "{char}"')
     return f
 
 
@@ -119,9 +120,7 @@ def parse_any_char(chars):
                     pass
                 case parsed:
                     return parsed
-        return i, l, c, ParsingError(
-            f'Parsing Error at line {l} column {c}:\n'
-            f'Expected one of {repr(chars)}')
+        return i, l, c, ParsingError(l, c, f'Expected one of {repr(chars)}')
     return f
 
 
@@ -132,9 +131,7 @@ def parse_word(word):
         for parser in parsers:
             match parser(p, ni, nl, nc):
                 case _, _, _, ParsingError():
-                    return i, l, c, ParsingError(
-                        f'ParseingError at line {l} column {c}:\n'
-                        f'Expected "{word}"')
+                    return i, l, c, ParsingError(l, c, f'Expected "{word}"')
                 case ni, nl, nc, _:
                     pass
         return ni, nl, nc, word
@@ -150,8 +147,7 @@ def parse_any_word(words):
                     pass
                 case parsed:
                     return parsed
-        return i, l, c, ParsingError(
-            f'Parsing Error at line {l} column {c}:\n'
+        return i, l, c, ParsingError(l, c,
             f'Expected one of [{", ".join([repr(s) for s in words])}]')
     return f
 
@@ -193,8 +189,7 @@ def parse_string_body(p, i, l, c):
                 i += 1
                 c += 1
                 if p[i] not in escapes:
-                    return i, l, c, ParsingError(
-                        f'Parsing Error at line {l} column {c}:\n'
+                    return i, l, c, ParsingError(l, c,
                         f'Incorrect escape sequence. Did you mean "\\\\"?')
                 ans += escapes[p[i]]
             else:
@@ -206,8 +201,7 @@ def parse_string_body(p, i, l, c):
                 c += 1
             i += 1
     except IndexError:
-        return i, l, c, ParsingError(
-            f'Parsing Error at line {l} column {c}:\n'
+        return i, l, c, ParsingError(l, c,
             f'Unexpected EOF while parsing a string')
     return i + 1, l, c + 1, ans
 
@@ -245,8 +239,7 @@ def parse_int_body(p, i, l, c):
                 return i, l, c, ans
             case ni, nl, nc, word:
                 if numbers[word] > prev:
-                    return i, l, c, ParsingError(
-                        f'Parsing Error at line {l} column {c}:\n'
+                    return i, l, c, ParsingError(l, c,
                         f'Number words must be in a non-increasing order')
                 ans += numbers[word]
                 i, l, c = ni, nl, nc
@@ -274,9 +267,7 @@ id_pattern = re.compile('(([AEIOU]n?)|([JKLMNPSTW][aeiou]n?))([jklmnpstw][aeiou]
 def parse_identifier(p, i, l, c):
     m = id_pattern.match(p, i)
     if not m:
-        return i, l, c, ParsingError(
-            f'Parsing Error at line {l} column {c}:\n'
-            f'Expected an identifier')
+        return i, l, c, ParsingError(l, c, f'Expected an identifier')
     m = m[0]
     return i + len(m), l, c + len(m), m
 
