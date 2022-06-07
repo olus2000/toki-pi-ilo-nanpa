@@ -56,6 +56,10 @@ class ReturnError(Exception):
 
 def represent(val):
     match val:
+        case True:
+            return '[lon]'
+        case False:
+            return '[lon ala]'
         case int():
             return '[nanpa]'
         case str():
@@ -91,11 +95,11 @@ def walk(expr, pali_ni=None, env=None):
             return pali_ni
         case NegateExpr():
             match walk(expr.expr, pali_ni, env):
-                case int() as i:
-                    return -i
                 case bool() as b:
                     return not b
-                case _:
+                case int() as i:
+                    return -i
+                case a:
                     return None
         case BinExpr(op='li'):
             return walk(expr.left, pali_ni, env) == walk(expr.right, pali_ni, env)
@@ -238,7 +242,8 @@ def walk(expr, pali_ni=None, env=None):
                       assignment=assignment,
                       expr=subexpr):
             for cond in conditions:
-                if not walk(cond, pali_ni, env):
+                val = walk(cond, pali_ni, env)
+                if val is False or val is None:
                     return None
             match assignment:
                 case None:

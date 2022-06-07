@@ -305,26 +305,17 @@ def parse_simple_expression(p, i, l, c):
         case ParsingError() as e:
             return i, l, c, e
         case 'ala':
-            value = LiteralExpr(None)
+            return i, l, c, LiteralExpr(None)
         case 'lon':
-            value = LiteralExpr(True)
+            return i, l, c, LiteralExpr(True)
         case 'kulupu':
-            value = LiteralExpr({})
+            return i, l, c, LiteralExpr({})
         case ['pali', 'ni']:
-            value = Recursion
+            return i, l, c, Recursion
         case Expression():
-            pass
+            return i, l, c, value
         case a:
             raise ValueError(a)
-    ala_parser = parse_separated(parse_word('ala'))
-    while True:
-        match ala_parser(p, i, l, c):
-            case ni, nl, nc, ParsingError():
-                return i, l, c, value
-            case i, l, c, 'ala':
-                value = NegateExpr(value)
-            case a:
-                raise ValueError(a)
 
 
 def parse_pi_expression(p, i, l, c):
@@ -350,12 +341,26 @@ def parse_pi_expression(p, i, l, c):
                 raise ValueError(a)
 
 
-def parse_expression(p, i, l, c):
+def parse_ala_expression(p, i, l, c):
     i, l, c, value = parse_pi_expression(p, i, l, c)
     if isinstance(value, ParsingError):
         return i, l, c, value
+    while True:
+        match parse_separated(parse_word('ala'))(p, i, l, c):
+            case _, _, _, ParsingError():
+                return i, l, c, value
+            case i, l, c, 'ala':
+                value = NegateExpr(value)
+            case a:
+                raise ValueError(a)
+
+
+def parse_expression(p, i, l, c):
+    i, l, c, value = parse_ala_expression(p, i, l, c)
+    if isinstance(value, ParsingError):
+        return i, l, c, value
     en_parser = parse_separated(parse_word('en'))
-    next_expr_parser = parse_separated(parse_pi_expression)
+    next_expr_parser = parse_separated(parse_ala_expression)
     while True:
         match en_parser(p, i, l, c):
             case _, _, _, ParsingError():
