@@ -25,9 +25,20 @@ It takes arguments:
    Runs the given source file with a tree-walking interpreter.
    Not efficient, will break on deep recursion.
 
+ - `--`
+ 
+   Indicates that any further arguments should be passed to the executed program.
+   They will be processed into a zero-indexed `kulupu` of strings.
+
 ### Example programs
-Ha ha! You thought I had time to make any good examples? Go to the esolangs wiki
-and try to run the code I posted there.
+
+ - FizzBuzz.tin
+
+   Awaits a decimal number and prints the FizzBuzz sequence up to that number.
+   Prints toki pona numbers instead of decimals. It's a pretty wide example,
+   containing a mapping from digits to their values, a converter from strings
+   to numbers and a converter from numbers to their toki pona representations,
+   in addition to the FizzBuzz logic itself.
 
 ### toki pi ilo nanpa source code
 Located in the "til/" folder it is composed of three files:

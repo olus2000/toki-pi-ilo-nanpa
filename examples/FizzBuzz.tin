@@ -1,0 +1,109 @@
+o nimi "Digit to number decoder".
+ijo Nanpalili li kulupu.
+    ijo Nanpalili pi nanpa ala         li nimi "0".
+    ijo Nanpalili pi nanpa wan         li nimi "1".
+    ijo Nanpalili pi nanpa tu          li nimi "2".
+    ijo Nanpalili pi nanpa tu wan      li nimi "3".
+    ijo Nanpalili pi nanpa tu tu       li nimi "4".
+    ijo Nanpalili pi nanpa luka        li nimi "5".
+    ijo Nanpalili pi nanpa luka wan    li nimi "6".
+    ijo Nanpalili pi nanpa luka tu     li nimi "7".
+    ijo Nanpalili pi nanpa luka tu wan li nimi "8".
+    ijo Nanpalili pi nanpa luka tu tu  li nimi "9".
+    o pali e pali sin kepeken nanpa ala.
+        pali ni li kepeken e ijo I.
+        ijo lili Sitelen li ijo Nanpalili pi ijo I.
+        ijo Nanpalili pi ijo Sitelen li ijo I.
+        ijo I en nanpa luka tu tu ala li lili la
+            o pali e pali ni kepeken ijo I en nanpa wan.
+    pali sin li pini.
+
+o nimi "String to number decoder".
+ijo Nanpanimi li pali sin.
+    pali ni li kepeken e ijo Nimi.
+    ijo lili Ansa li nanpa ala.
+    ijo lili I li nanpa ala.
+    o pali e pali sin.
+        ijo lili Sitelen li kipisi e ijo Nimi kepeken ijo I kepeken ijo I en nanpa wan.
+        ijo lili Tenpo li ijo Nanpalili pi ijo Sitelen.
+        ijo Tenpo la ijo Ansa li ijo Ansa en ijo Ansa en ijo Ansa en ijo Ansa en ijo Ansa en ijo Ansa en ijo Ansa en ijo Ansa en ijo Ansa en ijo Ansa en ijo Tenpo.
+        ijo I li ijo I en nanpa wan.
+        ijo Tenpo li lon.
+        ijo Sitelen li nimi "" la ijo Tenpo li lon ala.
+        ijo Tenpo la o pali e pali ni.
+    pali sin li pini.
+    o pana e ijo Ansa.
+pali sin li pini.
+
+o nimi "Number to string encoder, but I'm lazy".
+ijo Niminanpa li pali sin.
+    pali ni li kepeken e ijo I.
+    ijo lili Ansa li nimi "nanpa".
+    ijo lili I li nanpa ala la o pana e ijo Ansa en nimi " ala".
+    o pali e pali sin.
+        ijo lili Tenpo li lon.
+        ijo I en nanpa ale ala li lili la ijo Tenpo li lon ala.
+        ijo Tenpo la ijo Ansa li ijo Ansa en nimi " ale".
+        ijo Tenpo la ijo I li ijo I en nanpa ale ala.
+        ijo Tenpo la o pali e pali ni.
+    pali sin li pini.
+    o pali e pali sin.
+        ijo lili Tenpo li lon.
+        ijo I en nanpa mute ala li lili la ijo Tenpo li lon ala.
+        ijo Tenpo la ijo Ansa li ijo Ansa en nimi " mute".
+        ijo Tenpo la ijo I li ijo I en nanpa mute ala.
+        ijo Tenpo la o pali e pali ni.
+    pali sin li pini.
+    o pali e pali sin.
+        ijo lili Tenpo li lon.
+        ijo I en nanpa luka ala li lili la ijo Tenpo li lon ala.
+        ijo Tenpo la ijo Ansa li ijo Ansa en nimi " luka".
+        ijo Tenpo la ijo I li ijo I en nanpa luka ala.
+        ijo Tenpo la o pali e pali ni.
+    pali sin li pini.
+    o pali e pali sin.
+        ijo lili Tenpo li lon.
+        ijo I en nanpa tu ala li lili la ijo Tenpo li lon ala.
+        ijo Tenpo la ijo Ansa li ijo Ansa en nimi " tu".
+        ijo Tenpo la ijo I li ijo I en nanpa tu ala.
+        ijo Tenpo la o pali e pali ni.
+    pali sin li pini.
+    o pali e pali sin.
+        ijo lili Tenpo li lon.
+        ijo I en nanpa wan ala li lili la ijo Tenpo li lon ala.
+        ijo Tenpo la ijo Ansa li ijo Ansa en nimi " wan".
+        ijo Tenpo la ijo I li ijo I en nanpa wan ala.
+        ijo Tenpo la o pali e pali ni.
+    pali sin li pini.
+    o pana e ijo Ansa.
+pali sin li pini.
+
+
+ijo Pinpan li pali sin.
+    pali ni li kepeken e ijo En.
+    ijo lili I li nanpa ala.
+    ijo lili Pin li nanpa tu.
+    ijo lili Pan li nanpa tu tu.
+    ijo En en ijo I ala li suli la o pali e pali sin.
+        ijo I li ijo I en nanpa wan.
+        ijo lili Tenpo li lon.
+        ijo Pin li nanpa ala la ijo Tenpo li lon ala.
+        ijo Pin li nanpa ala la o sitelen e nimi "Fizz".
+        ijo Pin li nanpa ala la ijo Pin li ijo Pin en nanpa tu wan.
+        ijo Pan li nanpa ala la ijo Tenpo li lon ala.
+        ijo Pan li nanpa ala la o sitelen e nimi "Buzz".
+        ijo Pan li nanpa ala la ijo Pan li ijo Pan en nanpa luka.
+        ijo lili Sitelenanpa li pali e ijo Niminanpa kepeken ijo I.
+        ijo Tenpo la o sitelen e ijo Sitelenanpa.
+        o sitelen e nimi "\n".
+        ijo Pin li ijo Pin en nanpa wan ala.
+        ijo Pan li ijo Pan en nanpa wan ala.
+        ijo En en ijo I ala li suli la o pali e pali ni.
+    pali sin li pini.
+pali sin li pini.
+
+
+o sitelen e nimi "O pana e nanpa kepeken sitelen nanpa.\n"
+ijo In li lukin.
+ijo Nanpa li pali e ijo Nanpanimi kepeken ijo In.
+o pali e ijo Pinpan kepeken ijo Nanpa.

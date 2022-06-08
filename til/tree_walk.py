@@ -248,9 +248,9 @@ def walk(expr, pali_ni=None, env=None):
             match assignment:
                 case None:
                     return walk(subexpr, pali_ni, env)
-                case VariableExpr(ver_type='lili', identifier=k):
+                case VariableExpr(var_type='lili', identifier=k):
                     env.set_local(k, walk(subexpr, pali_ni, env))
-                case VariableExpr(ver_type='suli', identifier=k):
+                case VariableExpr(var_type='suli', identifier=k):
                     env.set_global(k, walk(subexpr, pali_ni, env))
                 case VariableExpr(identifier=k):
                     env.set_first(k, walk(subexpr, pali_ni, env))

@@ -263,7 +263,7 @@ def parse_int(p, i, l, c):
 
 
 # I got really annoyed by trying to make a parser for tp names.
-id_pattern = re.compile('(([AEIOU]n?)|([JKLMNPSTW][aeiou]n?))([jklmnpstw][aeiou]n?)*')
+id_pattern = re.compile('(?:(?:[AEIOU])|(?:[JKLMNPSTW][aeiou]))(?:n?(?![aeiou]))?(?:[jklmnpstw][aeiou](?:n(?![aeiou]))?)*')
 def parse_identifier(p, i, l, c):
     m = id_pattern.match(p, i)
     if not m:
