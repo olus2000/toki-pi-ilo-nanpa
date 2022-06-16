@@ -1,44 +1,95 @@
+from .AST import *
+
+
 '''
 Header:
     - 1 byte version (this file is v0)
-    - 1 byte length of variable identifiers minus 1
+    - 1 byte length of variable identifiers
+    - 1 byte length of addresses (AL)
+    - 1 byte length of length of paragraphs table (TLL)
+    - TLL bytes length of paragraph table (TL)
+    - TL * AL length of paragraph addresses (relative to the start of the main paragraph)
+    
+    
 
 TIL encoding:
- 00XXXXXX: literal unsigned integer spread over XXXXXX bytes.
- 01XXXXXX: literal unsigned integer which length is described by the next
-           XXXXXX+1 bytes.
- 100XXXXX: literal string stored in the next XXXXX bytes.
- 101XXXXX: literal string which length is stored in the next XXXXX+1 bytes.
- 11XXXXXX: command with the opcode XXXXXX
+ 00000XXX: literal unsigned integer spread over XXX bytes.
+ 00001XXX: literal string which length is stored in the next XXX bytes.
+ 00010XXX: relative jump forward by an amount described by the next XXX bytes.
+ 00011XXX: conditional relative jump by an amount described by the next XXX bytes.
 
-All numbers (literals and lengths) are stored big-endian.
-This allows for storing literal integers up to 2^64 bytes (a ton),
-and literal strings up to 2^32 bytes.
+All numbers (literals, lengths and addresses) are stored big-endian.
+This allows for storing literal integers up to 56 bits,
+literal strings and jumps up to 64 PB
 
 Opcodes:
-     00 - Literal True
-     01 - Literal table
-     10 - Literal None
-     11 - 
-    100 - First variable  |
-    101 - Local variable  | Followed by an identifier (length defined in header)
-    110 - Global variable |
-    111 -
-   1000 - Random
-   1001 - Recurse
-   1010 - Negate
-   1011 -
-   1100 - Bigger than zero
-   1101 - Smaller than zero
-   1110 -
+      00 - Literal True      ( -- lon )
+      01 - Literal table     ( -- kulupu )
+      10 - Literal None      ( -- ala )
+      11 - Literal paragraph ( -- pali ) Followed by TL byte identifier
+     100 - First variable  |
+     101 - Local variable  | Followed by an identifier (length defined in header)
+     110 - Global variable | ( -- x )
+     111 -
+    1000 - Random                 ( -- n )
+    1001 - Recurse                ( -- pali-ni )
+    1010 - Bigger than zero       ( n -- n>0? )
+    1011 - Smaller than zero      ( n -- n<0? )
+    1100 - Equal                  ( a b -- a=b? )
+    1101 - Negate                 ( n|b -- -n|~b )
+    1110 - Add                    ( a b -- a+b )
+    1111 - pi operator            ( a b -- a[b] )
+   10000 - Table assign           ( v t i -- )
+   10001 - First variable assign  ( x -- ) | ( -- ) |
+   10010 - Local variable assign  ( x -- )          | Followed by an identifier
+   10011 - Global variable assign ( x -- )          |
+   10100 - 
+   10101 - Call                   ( pali -- ) ( R: -- pali )
+   10110 - Drop                   ( x -- )
+   10111 - Empty                  ( ..xs -- )
+  ......
+  110000 - pali      ( ..args first -- ans )
+  110001 - pana      .
+  110010 - lukin     .
+  110011 - sitelen   .
+  110100 - kipisi
+  110101 - open
+  110110 - pini
 '''
 
+VARIABLE = {
+    None  : 4,
+    'lili': 5,
+    'suli': 6,
+}
 
-SHORT_INT = 0b00000000
-LONG_INT  = 0b01000000
-SHORT_STR = 0b10000000
-LONG_STR  = 0b10100000
-COMMAND   = 0b11000000
+ASSIGNMENT = {
+    None  : 17,
+    'lili': 18,
+    'suli': 19,
+}
+
+OPCODE = {
+    'suli'   : 10,
+    'lili'   : 11,
+    'li'     : 12,
+    'en'     : 14,
+    'pi'     : 15,
+    'pali'   : 48,
+    'pana'   : 49,
+    'lukin'  : 50,
+    'sitelen': 51,
+    'kipisi' : 52,
+    'open'   : 53,
+    'pini'   : 54,
+}
+
+
+INT = 0b00000000
+STR = 0b00001000
+JMP = 0b00010000
+JEZ = 0b00011000
+COMMAND = 0b10000000
 
 
 # big-endian
@@ -50,15 +101,33 @@ def int_to_bytes(n):
     return bytearray(reversed(encoded))
 
 
+def get_var_len(dictionary):
+    var_len = 0
+    n = len(dictionary) - 1
+    while n:
+        var_len += 1
+        n //= 256
+    return var_len
+
+
+class Dictionary:
+
+    def __init__(self):
+        self.vars = {}
+        self.pars = {}
+
+
 def make_dictionary(ast, dictionary=None):
     if dictionary is None:
-        dictionary = {}
+        dictionary = Dictionary()
     match ast:
+        case LiteralExpr(value = Paragraph() as par):
+            make_dictionary(par, dictionary)
         case LiteralExpr():
             pass
         case VariableExpr(identifier = identifier):
-            if identifier not in dictionary:
-                dictionary[identifier] = len(dictionary)
+            if identifier not in dictionary.vars:
+                dictionary.vars[identifier] = len(dictionary.vars)
         case RandomExpr():
             pass
         case RecursiveExpr():
@@ -78,70 +147,149 @@ def make_dictionary(ast, dictionary=None):
             make_dictionary(table, dictionary)
             make_dictionary(index, dictionary)
         case Sentence(conditions = conditions, assignment = assignment, expr = expr):
-            for expr in conditions:
-                make_dictionary(expr, dictionary)
-            make_dictionary(assignment, dictionary)
+            for cond in conditions:
+                make_dictionary(cond, dictionary)
+            if assignment is not None:
+                make_dictionary(assignment, dictionary)
             make_dictionary(expr, dictionary)
         case Paragraph(arguments = arguments, sentences = sentences):
-            for expr in arguments:
-                make_dictionary(expr, dictionary)
+            dictionary.pars[ast] = len(dictionary.pars)
+            for arg in arguments:
+                make_dictionary(arg, dictionary)
             for expr in sentences:
                 make_dictionary(expr, dictionary)
+        case a:
+            raise ValueError(a)
     return dictionary
 
 
-def compile_ast(ast, compiled, dictionary):
+def compile_ast(ast, dictionary) -> bytearray:
     match ast:
         case LiteralExpr(value = True):
-            compiled.append(byte((0 + COMMAND,)))
+            return bytearray((0 + COMMAND,))
         case LiteralExpr(value = dict()):
-            compiled.append(byte((1 + COMMAND,)))
+            return bytearray((1 + COMMAND,))
         case LiteralExpr(value = None):
-            compiled.append(byte((2 + COMMAND,)))
+            return bytearray((2 + COMMAND,))
         case LiteralExpr(value = str() as s):
             s = bytearray(s, 'utf-8')
-            if len(s) < 32:
-                compiled.append(byte((len(s) + SHORT_STR,)))
-            else:
-                encoded = int_to_bytes(len(s))
-                compiled.append(byte((len(encoded) - 1 + LONG_STR,)))
-                compiled += encoded
-            compiled += s
+            encoded = int_to_bytes(len(s))
+            assert len(encoded) <= 3
+            return bytearray((len(encoded) + STR,)) + encoded + s
         case LiteralExpr(value = int() as i):
-            i = int_to_bytes(i)
-            if len(i) < 64:
-                compilated.append(byte((len(i) + SHORT_INT,)))
-            else:
-                encoded = int_to_bytes(len(i))
-                compiled.append(byte((len(encoded) - 1 + LONG_INT,)))
-                compiled += encoded
-            compiled += i
+            encoded = int_to_bytes(i)
+            assert len(encoded) <= 3
+            return bytearray((len(encoded) + INT,)) + encoded
+        case LiteralExpr(value = Paragraph() as par):
+            par_len = get_var_len(dictionary.pars)
+            par = dictionary.pars[par]
+            encoded = int_to_bytes(par)
+            assert len(encoded) <= par_len
+            compiled = bytearray((3 + COMMAND,))
+            compiled += bytearray(par_len - len(encoded)) + encoded
+            return compiled
         case VariableExpr(var_type=var_type, identifier=identifier):
-            match var_type:
-                case None:
-                    compiled.append(byte((4 + COMMAND,)))
-                case 'lili':
-                    compiled.append(byte((5 + COMMAND,)))
-                case 'suli':
-                    compiled.append(byte((6 + COMMAND,)))
-                case a:
-                    raise ValueError(a)
-            identifier = dictionary[identifier]
-            var_len = compiled[1] + 1
+            compiled = bytearray((VARIABLE[var_type] + COMMAND,))
+            identifier = dictionary.vars[identifier]
+            var_len = get_var_len(dictionary.vars)
             encoded = int_to_bytes(identifier)
-            compiled += bytearray(b'\x00' * (var_len - len(encoded))) + encoded
+            assert len(encoded) <= var_len
+            compiled += bytearray(var_len - len(encoded)) + encoded
+            return compiled
         case RandomExpr():
-            compiled.append(byte((8 + COMMAND,)))
+            return bytearray((8 + COMMAND,))
         case RecursiveExpr():
-            compiled.append(byte((9 + COMMAND,)))
-        case 
+            return bytearray((9 + COMMAND,))
+        case NegateExpr(expr = expr):
+            return compile_ast(expr, dictionary) + bytearray((13 + COMMAND,))
+        case BinExpr(left = left, right = right, op = op):
+            compiled = compile_ast(left, dictionary)
+            compiled += compile_ast(right, dictionary)
+            return compiled + bytearray((OPCODE[op] + COMMAND,))
+        case ComparisonExpr(op = op, expr = expr):
+            compiled = compile_ast(expr, dictionary)
+            return compiled + bytearray((OPCODE[op] + COMMAND,))
+        case VerbExpr(verb = verb, first = first, args = args):
+            compiled = bytearray()
+            for arg in args[::-1]:
+                compiled += compile_ast(arg, dictionary)
+            if first is not None:
+                compiled += compile_ast(first, dictionary)
+            else:
+                compiled.append(2 + COMMAND)
+            return compiled + bytearray((OPCODE[verb] + COMMAND,))
+        case TableAssignment(table = table, index = index):
+            compiled = compile_ast(table, dictionary)
+            compiled += compile_ast(index, dictionary)
+            return compiled + bytearray((16 + COMMAND,))
+        case Sentence(conditions = conditions, assignment = assignment, expr = expr):
+            compiled_conds = []
+            for cond in conditions:
+                compiled_conds.append(compile_ast(cond, dictionary))
+            compiled = compile_ast(expr, dictionary)
+            match assignment:
+                case TableAssignment():
+                    compiled += compile_ast(assignment, dictionary)
+                case VariableExpr(var_type = var_type, identifier = identifier):
+                    compiled += bytearray((ASSIGNMENT[var_type] + COMMAND,))
+                    identifier = dictionary.vars[identifier]
+                    var_len = get_var_len(dictionary.vars)
+                    encoded = int_to_bytes(identifier)
+                    assert len(encoded) <= var_len
+                    compiled += bytearray(var_len - len(encoded)) + encoded
+                case None:
+                    compiled.append(22 + COMMAND)
+            for cond in compiled_conds[::-1]:
+                jump_dist = len(compiled)
+                encoded = int_to_bytes(jump_dist)
+                assert len(encoded) <= 3
+                cond.append(jump_dist + JEZ)
+                compiled = cond + encoded + compiled
+            return compiled
+        case Paragraph(arguments = arguments, sentences = sentences):
+            compiled = bytearray()
+            for arg in arguments:
+                compiled += bytearray((ASSIGNMENT[None] + COMMAND,))
+                identifier = dictionary.vars[arg.identifier]
+                var_len = get_var_len(dictionary.vars)
+                encoded = int_to_bytes(identifier)
+                assert len(encoded) <= var_len
+                compiled += bytearray(var_len - len(encoded)) + encoded
+            compiled.append(23 + COMMAND)
+            for sentence in sentences:
+                compiled += compile_ast(sentence, dictionary)
+            compiled += compile_ast(
+                Sentence([], None, VerbExpr('pana', None, [])),
+                dictionary
+            )
+            return compiled
+        case a:
+            raise ValueError(a)
+            
             
 
-def compile(ast):
+def compiler(ast: Paragraph) -> bytearray:
     dictionary = make_dictionary(ast)
-    var_len = 0
-    n = len(dictionary - 1)
-    while n:
-        var_len += 1
-        n //= 256
-    return compile_ast(ast, bytearray(0, var_len-1), dictionary)
+    var_len = get_var_len(dictionary.vars)
+    assert var_len < 256
+    par_len = get_var_len(dictionary.pars)
+    assert par_len < 256
+    pars = [x[1] for x in sorted([(v, k) for k, v in dictionary.pars.items()])]
+    compiled = bytearray()
+    addresses = []
+    for par in pars:
+        addresses.append(len(compiled))
+        compiled += compile_ast(par, dictionary)
+    adr_len = get_var_len(compiled)
+    assert adr_len < 256
+    par_table = bytearray()
+    for adr in addresses:
+        encoded = int_to_bytes(adr)
+        par_table += bytearray(adr_len - len(encoded)) + encoded
+    header = bytearray((0, var_len, adr_len, par_len))
+    encoded_par_num = int_to_bytes(len(addresses))
+    assert par_len == len(encoded_par_num)
+    return header + \
+           encoded_par_num + \
+           par_table + \
+           compiled

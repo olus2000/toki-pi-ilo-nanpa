@@ -374,7 +374,7 @@ parse_verb = parse_any_word(['pali', 'pana', 'lukin', 'sitelen', 'kipisi',
 
 def parse_sentence_body(p, i, l, c):
     verb = None
-    first = None
+    first = LiteralExpr(None)
     args = []
     match alter(parse_verb, parse_expression)(p, i, l, c):
         case i, l, c, ParsingError() as e:

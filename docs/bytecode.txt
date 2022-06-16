@@ -1,0 +1,65 @@
+toki pi ilo nanpa li kama lili: a bytecode encoding for tin.
+
+All numbers (literals, lengths and addresses) are stored big-endian.
+This scheme allows for storing literal integers up to 56 bits,
+literal strings and jumps up to 64 PB.
+
+The til bytecode is supposed to be executed by a virtual stack machine.
+Each operation has its stack effect listed in parenthesis.
+
+Header:
+    - 1 byte version (this file is v0)
+    - 1 byte length of variable identifiers
+    - 1 byte length of addresses (AL)
+    - 1 byte length of length of paragraphs table (TLL)
+    - TLL bytes length of paragraph table (TL)
+    - TL * AL length of paragraph addresses (relative to the start of the main paragraph)
+    - Paragraphs
+    
+    
+
+TIL bytecode:
+ 00000XXX: ( -- n )
+    literal unsigned integer spread over XXX bytes.
+ 00001XXX: ( -- s )
+    literal string which length is stored in the next XXX bytes.
+ 00010XXX: ( -- ) unused
+    relative jump forward by an amount described by the next XXX bytes.
+ 00011XXX: ( ? -- )
+    conditional relative jump by an amount described by the next XXX bytes.
+ 1XXXXXXX: ( see opcodes section )
+    opcode number XXXXXXX, possibly followed by an identifier.
+
+Opcodes:
+      00 - Literal True      ( -- lon )
+      01 - Literal table     ( -- kulupu )
+      10 - Literal None      ( -- ala )
+      11 - Literal paragraph ( -- pali ) Followed by TL byte identifier
+     100 - First variable  |
+     101 - Local variable  | Followed by an identifier (length defined in header)
+     110 - Global variable | ( -- x )
+     111 -
+    1000 - Random                 ( -- n )
+    1001 - Recurse                ( -- pali-ni )
+    1010 - Bigger than zero       ( n -- n>0? )
+    1011 - Smaller than zero      ( n -- n<0? )
+    1100 - Equal                  ( a b -- a=b? )
+    1101 - Negate                 ( n|b -- -n|~b )
+    1110 - Add                    ( a b -- a+b )
+    1111 - pi operator            ( a b -- a[b] )
+   10000 - Table assign           ( v t i -- )
+   10001 - First variable assign  ( x -- ) | ( -- ) |
+   10010 - Local variable assign  ( x -- )          | Followed by an identifier
+   10011 - Global variable assign ( x -- )          |
+   10100 - 
+   10101 - Call                   ( pali -- ) ( R: -- pali )
+   10110 - Drop                   ( x -- )
+   10111 - Empty                  ( ..xs -- )
+  ......
+  110000 - pali      ( ..args first -- ans )
+  110001 - pana      .
+  110010 - lukin     .
+  110011 - sitelen   .
+  110100 - kipisi
+  110101 - open
+  110110 - pini

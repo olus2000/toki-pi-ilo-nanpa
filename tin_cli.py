@@ -1,6 +1,7 @@
 from tin.AST import VerbExpr, LiteralExpr
 from tin.tree_walk import walk
 from tin.parser import parser, ParsingError
+from tin.compiler import compiler
 
 from sys import argv
 
@@ -29,7 +30,7 @@ def help():
         '        Path to the source file to be compiled/walked.\n'
         '        Should contain a valid toki pi ilo nanpa program.\n'
         '\n'
-        '    -b <bytecode> UNIMPLEMENTED\n'
+        '    -b <bytecode>\n'
         '        If -s was passed: Path to a compilation destination file.\n'
         '        Otherwise path to a toki pi ilo nanpa bytecode file to be\n'
         '        executed.\n'
@@ -63,7 +64,7 @@ if __name__ == '__main__':
     while len(args) > 0:
         match args:
             case ['-w', *args]:
-                w = True
+                wlk = True
             case ['-r', *args]:
                 run = True
             case ['-s', str() as source, *args]:
@@ -78,7 +79,7 @@ if __name__ == '__main__':
             case _:
                 help()
                 exit()
-    if w and source is None:
+    if wlk and source is None:
         print('Option -w requires a source file passed with -s.\n'
               'See -h for help with options.')
         exit()
@@ -88,12 +89,14 @@ if __name__ == '__main__':
               'See -h for help with options.')
         exit()
     if source is None and bytecode is None or \
-       (source is None or bytecode is None) and not run and not w:
+       (source is None or bytecode is None) and not run and not wlk:
         print('You didn\'t give me anything to do!\n'
               'See -h for help with options.')
         exit()
-    if bytecode is not None:
-        print('Option -b has not been implemented yet.')
+    if wlk and run:
+        print('You can\'t both walk and run the program in the same call.\n'
+              'Only specify one of -r and -w.\n'
+              'See -h for help with options.')
     if run:
         print('option -r has not been implemented yet.')
     if source is not None:
@@ -102,9 +105,20 @@ if __name__ == '__main__':
             if isinstance(AST, ParsingError):
                 print(AST)
                 exit()
-        AST = VerbExpr('pali', LiteralExpr(AST),
-                       [LiteralExpr({i: v for i, v in enumerate(program_args)})])
-        if w:
-            ans = walk(AST)
+        walkable = VerbExpr('pali', LiteralExpr(AST),
+                            [LiteralExpr({i: v for i, v in enumerate(program_args)})])
+        if wlk:
+            ans = walk(walkable)
             print(f'Program exited with {ans}')
-    
+        if bytecode is not None or run:
+            compiled = compiler(AST)
+            if bytecode is not None:
+                with open(bytecode, 'wb') as f:
+                    f.write(compiled)
+            if run:
+                raise NotImplementedError()
+    if bytecode is not None:
+        with open(bytecode, 'rb') as f:
+            compiled = f.read()
+        if run:
+            raise NotImplementedError()
