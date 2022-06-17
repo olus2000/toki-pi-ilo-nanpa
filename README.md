@@ -66,6 +66,10 @@ Located in the "til/" folder it is composed of three files:
  
    Classes describing the abstract syntax tree used as an intermediate representation
    between parsing and execution/compilation.
+ 
+ - environment.py
+ 
+   Contains the Environment class used for storing tin variables.
 
  - parser.py
  
@@ -74,3 +78,11 @@ Located in the "til/" folder it is composed of three files:
  - tree_walk.py
 
    Functions for walking the AST. Breaks on deep recursion.
+ 
+ - compiler.py
+
+   Functions for compiling the AST to bytecode.
+   
+ - virtual_machine.py
+ 
+   A virtual machine capable of running bytecode compiled by compiler.py
