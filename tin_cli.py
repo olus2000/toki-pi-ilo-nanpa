@@ -2,6 +2,7 @@ from tin.AST import VerbExpr, LiteralExpr
 from tin.tree_walk import walk
 from tin.parser import parser, ParsingError
 from tin.compiler import compiler
+from tin.virtual_machine import virtual_machine
 
 from sys import argv
 
@@ -41,7 +42,7 @@ def help():
         '        walker algorithm. Note that this is not efficient and may\n'
         '        break on deep recursion.\n'
         '\n'
-        '    -r UNIMPLEMENTED\n'
+        '    -r\n'
         '        Requires -s or -b\n'
         '        If -s was passed the program in it will be compiled and\n'
         '        executed. If both -s and -b were passed the compiled bytecode\n'
@@ -56,7 +57,7 @@ def help():
 
 if __name__ == '__main__':
     args = argv[1:]
-    w = False
+    wlk = False
     source = None
     bytecode = None
     run = False
@@ -97,8 +98,6 @@ if __name__ == '__main__':
         print('You can\'t both walk and run the program in the same call.\n'
               'Only specify one of -r and -w.\n'
               'See -h for help with options.')
-    if run:
-        print('option -r has not been implemented yet.')
     if source is not None:
         with open(source, 'r') as f:
             AST = parser(f.read())
@@ -116,9 +115,9 @@ if __name__ == '__main__':
                 with open(bytecode, 'wb') as f:
                     f.write(compiled)
             if run:
-                raise NotImplementedError()
-    if bytecode is not None:
+                virtual_machine(compiled, program_args)
+    elif bytecode is not None:
         with open(bytecode, 'rb') as f:
             compiled = f.read()
         if run:
-            raise NotImplementedError()
+            virtual_machine(compiled, program_args)

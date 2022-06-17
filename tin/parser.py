@@ -503,7 +503,7 @@ def parse_paragraph(p, i, l, c):
                 case i, l, c, ParsingError() as e:
                     return i, l, c, e
                 case i, l, c, [['li', 'kepeken', 'e', 'ijo'], str() as identifier]:
-                    arguments = [VariableExpr(None, identifier)]
+                    arguments = [VariableExpr('lili', identifier)]
                 case a:
                     raise ValueError(a)
             while True:

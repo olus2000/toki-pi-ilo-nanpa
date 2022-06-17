@@ -14,19 +14,35 @@ if I learned how to build python modules.
 
 ### Command Line Interface for toki pi ilo nanpa
 It's a small tool for working with til programs located in the file "til_cli.py".
-It can be used to execute til programs and ~~compile them into bytecode~~ (unimplemented).
+It can be used to execute til programs and compile them into bytecode.
 
 It takes arguments:
 
  - `-s <source>`
 
-   A source file to be run ~~or compiled~~.
+   A source file to be run or compiled.
+ 
+ - `-b <source>`
+   
+   If -s was not specified:
+   A bytecode source file to be executed with -r.
+   
+   If -s was specified:
+   A destination for the compiled source to be saved in.
+   
 
  - `-w`
 
-   Requires -s.
+   Requires -s and no -r.
+   
    Runs the given source file with a tree-walking interpreter.
    Not efficient, will break on deep recursion.
+ 
+ - `-r`
+ 
+    Requires -s or -b and no -w.
+    
+    Runs the given/compiled bytecode with a virtual machine.
 
  - `--`
  

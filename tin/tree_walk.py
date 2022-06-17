@@ -1,51 +1,11 @@
 from .AST import *
+from .environment import Environment
 from random import randrange
 from io import TextIOWrapper
 from itertools import zip_longest
 
 
-class Environment:
 
-    def __init__(self, parent=None):
-        self.parent = parent
-        self.data = {}
-
-    def get_local(self, k):
-        if k in self.data:
-            return self.data[k]
-        else:
-            return None
-
-    def set_local(self, k, v):
-        self.data[k] = v
-
-    def get_first(self, k):
-        if k in self.data:
-            return self.data[k]
-        elif self.parent is None:
-            return None
-        else:
-            return self.parent.get_first(k)
-
-    def set_first(self, k, v):
-        if k in self.data or self.parent is None:
-            self.data[k] = v
-        else:
-            self.parent.set_first(k, v)
-
-    def get_global(self, k):
-        if self.parent is not None:
-            return self.parent.get_global(k)
-        elif k in self.data:
-            return self.data[k]
-        else:
-            return None
-
-    def set_global(self, k, v):
-        if self.parent is not None:
-            self.parent.set_global(k)
-        else:
-            self.data[k] = v
         
 
 class ReturnError(Exception):
@@ -107,6 +67,10 @@ def walk(expr, pali_ni=None, env=None):
             match walk(expr.left, pali_ni, env), walk(expr.right, pali_ni, env):
                 case str() as a, str() as b:
                     return a + b
+                case bool(), _:
+                    return None
+                case _, bool():
+                    return None
                 case int() as a, int() as b:
                     return a + b
                 case _:
@@ -116,6 +80,8 @@ def walk(expr, pali_ni=None, env=None):
                 case dict() as a, b:
                     if b in a:
                         return a[b]
+                    return None
+                case _, bool():
                     return None
                 case str() as a, int() as b:
                     if 0 <= b < len(a):
@@ -127,12 +93,16 @@ def walk(expr, pali_ni=None, env=None):
             raise Exception(f'Wrong binary operator {e}')
         case ComparisonExpr(op='lili'):
             match walk(expr.expr, pali_ni, env):
+                case bool():
+                    return False
                 case int() as i:
                     return i < 0
                 case _:
                     return False
         case ComparisonExpr(op='suli'):
             match walk(expr.expr, pali_ni, env):
+                case bool():
+                    return False
                 case int() as i:
                     return i > 0
                 case _:
@@ -143,14 +113,8 @@ def walk(expr, pali_ni=None, env=None):
             raise ReturnError(walk(first, pali_ni, env))
         case VerbExpr(verb='lukin', first=first):
             match walk(first, pali_ni, env):
-                case TextIOWrapper(closed=False):
-                    if first.readable():
-                        return first.readline()
-                    else:
-                        try:
-                            return input() + '\n'
-                        except EOFError as e:
-                            return ''
+                case TextIOWrapper(closed=False) if first.readable():
+                    return first.readline()
                 case _:
                     try:
                         return input() + '\n'
@@ -158,25 +122,25 @@ def walk(expr, pali_ni=None, env=None):
                         return ''
         case VerbExpr(verb='sitelen', first=first, args=[dest, *rest]):
             match walk(dest, pali_ni, env), represent(walk(first, pali_ni, env)):
-                case TextIOWrapper(closed=False) as dest, first:
-                    if dest.writeable():
-                        print(first, file=dest, end='')
-                    else:
-                        print(first, end='')
+                case TextIOWrapper(closed=False) as dest, first if dest.writeable():
+                    print(first, file=dest, end='')
                 case _, first:
                     print(first, end='')
         case VerbExpr(verb='sitelen', first=first):
             print(represent(walk(first, pali_ni, env)), end='')
         case VerbExpr(verb='kipisi', first=first, args=[start, stop, *rest]):
             match walk(first, pali_ni, env), walk(start, pali_ni, env), walk(stop, pali_ni, env):
-                case str() as first, int() as start, int() as stop:
+                case str() as first, int() as start, int() as stop \
+                     if type(start) is not bool and type(stop) is not bool:
                     start = min(max(start, 0), len(first))
                     stop = min(max(stop, 0), len(first))
                     return first[start:stop]
-                case str() as first, int() as start, _:
+                case str() as first, int() as start, _ \
+                     if type(start) is not bool:
                     start = min(max(start, 0), len(first))
                     return first[start:]
-                case str() as first, _, int() as stop:
+                case str() as first, _, int() as stop \
+                     if type(stop) is not bool: 
                     stop = min(max(stop, 0), len(first))
                     return first[:stop]
                 case str() as first, _, _:
@@ -185,7 +149,8 @@ def walk(expr, pali_ni=None, env=None):
                     return None
         case VerbExpr(verb='kipisi', first=first, args=[start, *rest]):
             match walk(first, pali_ni, env), walk(start, pali_ni, env):
-                case str() as first, int() as start:
+                case str() as first, int() as start \
+                     if type(start) is not bool:
                     start = min(max(start, 0), len(first))
                     return first[start:]
                 case str() as first, _:

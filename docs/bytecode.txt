@@ -1,4 +1,5 @@
 toki pi ilo nanpa li kama lili: a bytecode encoding for tin.
+Version 0.
 
 All numbers (literals, lengths and addresses) are stored big-endian.
 This scheme allows for storing literal integers up to 56 bits,
@@ -48,11 +49,11 @@ Opcodes:
     1110 - Add                    ( a b -- a+b )
     1111 - pi operator            ( a b -- a[b] )
    10000 - Table assign           ( v t i -- )
-   10001 - First variable assign  ( x -- ) | ( -- ) |
-   10010 - Local variable assign  ( x -- )          | Followed by an identifier
+   10001 - First variable assign  ( x -- )          |
+   10010 - Local variable assign  ( x -- ) | ( -- ) | Followed by an identifier
    10011 - Global variable assign ( x -- )          |
    10100 - 
-   10101 - Call                   ( pali -- ) ( R: -- pali )
+   10101 - 
    10110 - Drop                   ( x -- )
    10111 - Empty                  ( ..xs -- )
   ......

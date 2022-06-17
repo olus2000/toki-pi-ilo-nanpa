@@ -2,59 +2,8 @@ from .AST import *
 
 
 '''
-Header:
-    - 1 byte version (this file is v0)
-    - 1 byte length of variable identifiers
-    - 1 byte length of addresses (AL)
-    - 1 byte length of length of paragraphs table (TLL)
-    - TLL bytes length of paragraph table (TL)
-    - TL * AL length of paragraph addresses (relative to the start of the main paragraph)
-    
-    
-
-TIL encoding:
- 00000XXX: literal unsigned integer spread over XXX bytes.
- 00001XXX: literal string which length is stored in the next XXX bytes.
- 00010XXX: relative jump forward by an amount described by the next XXX bytes.
- 00011XXX: conditional relative jump by an amount described by the next XXX bytes.
-
-All numbers (literals, lengths and addresses) are stored big-endian.
-This allows for storing literal integers up to 56 bits,
-literal strings and jumps up to 64 PB
-
-Opcodes:
-      00 - Literal True      ( -- lon )
-      01 - Literal table     ( -- kulupu )
-      10 - Literal None      ( -- ala )
-      11 - Literal paragraph ( -- pali ) Followed by TL byte identifier
-     100 - First variable  |
-     101 - Local variable  | Followed by an identifier (length defined in header)
-     110 - Global variable | ( -- x )
-     111 -
-    1000 - Random                 ( -- n )
-    1001 - Recurse                ( -- pali-ni )
-    1010 - Bigger than zero       ( n -- n>0? )
-    1011 - Smaller than zero      ( n -- n<0? )
-    1100 - Equal                  ( a b -- a=b? )
-    1101 - Negate                 ( n|b -- -n|~b )
-    1110 - Add                    ( a b -- a+b )
-    1111 - pi operator            ( a b -- a[b] )
-   10000 - Table assign           ( v t i -- )
-   10001 - First variable assign  ( x -- ) | ( -- ) |
-   10010 - Local variable assign  ( x -- )          | Followed by an identifier
-   10011 - Global variable assign ( x -- )          |
-   10100 - 
-   10101 - Call                   ( pali -- ) ( R: -- pali )
-   10110 - Drop                   ( x -- )
-   10111 - Empty                  ( ..xs -- )
-  ......
-  110000 - pali      ( ..args first -- ans )
-  110001 - pana      .
-  110010 - lukin     .
-  110011 - sitelen   .
-  110100 - kipisi
-  110101 - open
-  110110 - pini
+Compatible with til bytecode version 0.
+For more info see the docs folder.
 '''
 
 VARIABLE = {
@@ -174,11 +123,11 @@ def compile_ast(ast, dictionary) -> bytearray:
         case LiteralExpr(value = str() as s):
             s = bytearray(s, 'utf-8')
             encoded = int_to_bytes(len(s))
-            assert len(encoded) <= 3
+            assert len(encoded) <= 7
             return bytearray((len(encoded) + STR,)) + encoded + s
-        case LiteralExpr(value = int() as i):
+        case LiteralExpr(value = int() as i) if type(i) is not bool:
             encoded = int_to_bytes(i)
-            assert len(encoded) <= 3
+            assert len(encoded) <= 7
             return bytearray((len(encoded) + INT,)) + encoded
         case LiteralExpr(value = Paragraph() as par):
             par_len = get_var_len(dictionary.pars)
@@ -242,14 +191,14 @@ def compile_ast(ast, dictionary) -> bytearray:
             for cond in compiled_conds[::-1]:
                 jump_dist = len(compiled)
                 encoded = int_to_bytes(jump_dist)
-                assert len(encoded) <= 3
-                cond.append(jump_dist + JEZ)
+                assert len(encoded) <= 7
+                cond.append(len(encoded) + JEZ)
                 compiled = cond + encoded + compiled
             return compiled
         case Paragraph(arguments = arguments, sentences = sentences):
             compiled = bytearray()
             for arg in arguments:
-                compiled += bytearray((ASSIGNMENT[None] + COMMAND,))
+                compiled += bytearray((ASSIGNMENT['lili'] + COMMAND,))
                 identifier = dictionary.vars[arg.identifier]
                 var_len = get_var_len(dictionary.vars)
                 encoded = int_to_bytes(identifier)
