@@ -52,7 +52,9 @@ def consume(compiled: bytearray, start: int, length: int) -> (int, int):
     return ans, start
 
 
-def virtual_machine(compiled: bytearray, args):
+def virtual_machine(compiled: bytearray, args: list | None = None):
+    if args is None:
+        args = []
     version = compiled[0]
     assert version <= 0
     var_len = compiled[1]
@@ -65,7 +67,7 @@ def virtual_machine(compiled: bytearray, args):
         par_adr_tab.append(par_adr)
     pars = [compiled[ip + adr : ip + end] for adr, end
             in zip(par_adr_tab, par_adr_tab[1:] + [len(compiled) - ip])]
-    data = []
+    data = [{i: arg for i, arg in enumerate(args)}]
     ret = []
     par = 0
     ip = 0
