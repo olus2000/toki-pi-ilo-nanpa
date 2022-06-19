@@ -237,7 +237,7 @@ def compiler(ast: Paragraph) -> bytearray:
         par_table += bytearray(adr_len - len(encoded)) + encoded
     header = bytearray((0, var_len, adr_len, par_len))
     encoded_par_num = int_to_bytes(len(addresses))
-    print(par_len, len(encoded_par_num))
+##    print(par_len, len(encoded_par_num))
     assert par_len == len(encoded_par_num)
     return header + \
            encoded_par_num + \
