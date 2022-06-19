@@ -37,6 +37,6 @@ class Environment:
 
     def set_global(self, k, v):
         if self.parent is not None:
-            self.parent.set_global(k)
+            self.parent.set_global(k, v)
         else:
             self.data[k] = v

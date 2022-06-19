@@ -221,7 +221,7 @@ def compiler(ast: Paragraph) -> bytearray:
     dictionary = make_dictionary(ast)
     var_len = get_var_len(dictionary.vars)
     assert var_len < 256
-    par_len = get_var_len(dictionary.pars)
+    par_len = max(get_var_len(dictionary.pars), 1)
     assert par_len < 256
     pars = [x[1] for x in sorted([(v, k) for k, v in dictionary.pars.items()])]
     compiled = bytearray()
@@ -237,6 +237,7 @@ def compiler(ast: Paragraph) -> bytearray:
         par_table += bytearray(adr_len - len(encoded)) + encoded
     header = bytearray((0, var_len, adr_len, par_len))
     encoded_par_num = int_to_bytes(len(addresses))
+    print(par_len, len(encoded_par_num))
     assert par_len == len(encoded_par_num)
     return header + \
            encoded_par_num + \
