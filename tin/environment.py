@@ -2,6 +2,10 @@ class Environment:
 
     def __init__(self, parent=None):
         self.parent = parent
+        if parent is None:
+            self.grandparent = self
+        else:
+            self.grandparent = parent.grandparent
         self.data = {}
 
     def get_local(self, k):
@@ -14,29 +18,23 @@ class Environment:
         self.data[k] = v
 
     def get_first(self, k):
+        while k not in self.data and self.parent is not None:
+            self = self.parent
         if k in self.data:
             return self.data[k]
-        elif self.parent is None:
-            return None
         else:
-            return self.parent.get_first(k)
+            return None
 
     def set_first(self, k, v):
-        if k in self.data or self.parent is None:
-            self.data[k] = v
-        else:
-            self.parent.set_first(k, v)
+        while k not in self.data and self.parent is not None:
+            self = self.parent
+        self.data[k] = v
 
     def get_global(self, k):
-        if self.parent is not None:
-            return self.parent.get_global(k)
-        elif k in self.data:
-            return self.data[k]
+        if k in self.grandparent:
+            return self.grandparent.data[k]
         else:
             return None
 
     def set_global(self, k, v):
-        if self.parent is not None:
-            self.parent.set_global(k, v)
-        else:
-            self.data[k] = v
+        self.grandparent.data[k] = v
