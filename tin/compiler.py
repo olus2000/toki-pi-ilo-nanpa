@@ -52,7 +52,7 @@ def int_to_bytes(n):
 
 def get_var_len(dictionary):
     var_len = 0
-    n = len(dictionary) - 1
+    n = len(dictionary)
     while n:
         var_len += 1
         n //= 256
